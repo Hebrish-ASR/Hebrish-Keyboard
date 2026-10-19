@@ -1,3 +1,24 @@
+# Hebrish Keyboard
+
+A full Android keyboard for [Hebrish](https://hebrish.app): on-device English dictation that
+writes Hebrew words (romanized) correctly. It is a fork of
+**[HeliBoard](https://github.com/HeliBorg/HeliBoard)** with Hebrish voice input built into the
+keyboard's mic key, so dictation needs no switch to a separate voice keyboard.
+
+- **Status:** setting up. So far the fork is HeliBoard 4.2, renamed (app name, application ID
+  `app.hebrish.keyboard`) so it installs alongside stock HeliBoard. Voice input is not wired yet.
+- **Prefer your own keyboard?** The voice-only input method that pairs with any keyboard lives in
+  [Hebrish-Dictation](https://github.com/Hebrish-ASR/Hebrish-Dictation).
+- **Credit:** all keyboard functionality is HeliBoard's, by Helium314 and the HeliBoard
+  contributors, itself based on OpenBoard and AOSP LatinIME. Licensed GPL-3.0, like HeliBoard.
+- **Please report bugs here, not to HeliBoard.** Issues that also occur in stock HeliBoard
+  belong upstream, raised by a human per HeliBoard's [AI usage policy](AI_USAGE.md).
+- How this fork tracks upstream: [`docs/upstream.md`](docs/upstream.md).
+
+The original HeliBoard README follows.
+
+---
+
 # HeliBoard
 HeliBoard is a privacy-conscious and customizable open-source keyboard, based on AOSP / OpenBoard.
 Does not use internet permission, and thus is 100% offline.

@@ -10,7 +10,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "helium314.keyboard"
+        applicationId = "app.hebrish.keyboard"
         minSdk = 21
         targetSdk = 37
         versionCode = 4201
@@ -66,7 +66,7 @@ android {
             }
             variant.outputs.forEach { output ->
                 if (output is com.android.build.api.variant.impl.VariantOutputImpl) {
-                    output.outputFileName = "HeliBoard_${defaultConfig.versionName}-${variant.buildType}.apk"
+                    output.outputFileName = "HebrishKeyboard_${defaultConfig.versionName}-${variant.buildType}.apk"
                 }
             }
         }
