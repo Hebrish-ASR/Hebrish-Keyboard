@@ -12,3 +12,6 @@
 # after upgrading to gradle 8, stack traces contain "unknown source"
 -keepattributes SourceFile,LineNumberTable
 -dontobfuscate
+
+# Hebrish: sherpa-onnx's JNI layer creates and reads its Kotlin classes by name
+-keep class com.k2fsa.sherpa.onnx.** { *; }

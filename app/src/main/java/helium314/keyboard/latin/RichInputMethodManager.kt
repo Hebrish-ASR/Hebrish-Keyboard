@@ -54,7 +54,8 @@ class RichInputMethodManager private constructor() {
 
     private var shortcuts = listOf<Shortcut>()
 
-    val isShortcutImeReady get() = shortcuts.isNotEmpty()
+    // Hebrish: the mic key is always live; it dictates in-keyboard (app.hebrish.voice.HebrishVoice)
+    val isShortcutImeReady get() = true
 
     fun getEnabledInputMethodSubtypes(imi: InputMethodInfo, allowsImplicitlySelectedSubtypes: Boolean) =
         inputMethodInfoCache.getEnabledInputMethodSubtypeList(imi, allowsImplicitlySelectedSubtypes)

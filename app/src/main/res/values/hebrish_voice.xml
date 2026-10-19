@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Hebrish voice input (app/src/main/java/app/hebrish/voice). English only for now. -->
+<resources>
+    <string name="hebrish_voice_listening">%1$s Listening %2$d:%3$02d · mic to finish · tap here to discard</string>
+    <string name="hebrish_voice_loading">Loading the model…</string>
+    <string name="hebrish_voice_transcribing">Transcribing…</string>
+    <string name="hebrish_voice_failed">Dictation failed: %1$s</string>
+    <string name="hebrish_voice_mic_failed">Could not open the microphone: %1$s</string>
+    <string name="hebrish_voice_launcher">Hebrish voice</string>
+    <string name="hebrish_voice_setup_title">Hebrish voice input</string>
+    <string name="hebrish_voice_setup_intro">Dictate with the keyboard\'s mic key. Speech is transcribed on this phone; no audio leaves it. English with Hebrew words, written in romanized form.</string>
+    <string name="hebrish_voice_setup_model">1. Model</string>
+    <string name="hebrish_voice_setup_option">%1$s (%2$s)\n%3$s</string>
+    <string name="hebrish_voice_setup_soon">coming soon</string>
+    <string name="hebrish_voice_setup_downloaded">downloaded</string>
+    <string name="hebrish_voice_setup_not_downloaded">not downloaded</string>
+    <string name="hebrish_voice_setup_download">Download</string>
+    <string name="hebrish_voice_setup_downloading">Downloading %1$s: %2$d of %3$d MB. Wi-Fi recommended.</string>
+    <string name="hebrish_voice_setup_ready">Ready: %1$s %2$s (%3$d MB).</string>
+    <string name="hebrish_voice_setup_missing">%1$s is not downloaded yet (about %2$d MB, once).</string>
+    <string name="hebrish_voice_setup_failed">Download failed: %1$s</string>
+    <string name="hebrish_voice_setup_mic">2. Microphone</string>
+    <string name="hebrish_voice_setup_mic_ok">Microphone allowed.</string>
+    <string name="hebrish_voice_setup_mic_missing">The keyboard needs the microphone to hear you.</string>
+    <string name="hebrish_voice_setup_mic_grant">Allow microphone</string>
+    <string name="hebrish_voice_setup_use">3. Dictate</string>
+    <string name="hebrish_voice_setup_use_body">Tap the mic key (toolbar or keyboard) and talk. Tap it again to insert the text. Tap the bar above the keys to discard a take. Takes are limited to 90 seconds.</string>
+    <string name="hebrish_voice_setup_site">hebrish.app</string>
+</resources>

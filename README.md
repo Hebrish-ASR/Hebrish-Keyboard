@@ -5,8 +5,12 @@ writes Hebrew words (romanized) correctly. It is a fork of
 **[HeliBoard](https://github.com/HeliBorg/HeliBoard)** with Hebrish voice input built into the
 keyboard's mic key, so dictation needs no switch to a separate voice keyboard.
 
-- **Status:** setting up. So far the fork is HeliBoard 4.2, renamed (app name, application ID
-  `app.hebrish.keyboard`) so it installs alongside stock HeliBoard. Voice input is not wired yet.
+- **Status:** early, not yet tested on a phone. HeliBoard 4.2, renamed (application ID
+  `app.hebrish.keyboard`) so it installs alongside stock HeliBoard, with dictation on the mic
+  key: tap to talk, tap again to insert. First use opens **Hebrish voice** setup to download the
+  model (about 660 MB, once) and allow the microphone.
+- **Differences from HeliBoard:** adds the microphone and internet permissions (internet is for
+  the one-time model download; HeliBoard itself has none), and builds for arm64 phones only.
 - **Prefer your own keyboard?** The voice-only input method that pairs with any keyboard lives in
   [Hebrish-Dictation](https://github.com/Hebrish-ASR/Hebrish-Dictation).
 - **Credit:** all keyboard functionality is HeliBoard's, by Helium314 and the HeliBoard

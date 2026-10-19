@@ -13,6 +13,9 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WRITE_USER_DICTIONARY" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Hebrish: dictation (microphone) and the one-time model download (internet). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application android:label="@string/english_ime_name"
             android:name="helium314.keyboard.latin.App"
@@ -55,6 +58,17 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
                 android:theme="@style/platformActivityTheme"
                 android:icon="@mipmap/ic_launcher"
                 android:windowSoftInputMode="adjustResize"
+                android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Hebrish: voice setup (model download, microphone), with its own launcher icon -->
+        <activity android:name="app.hebrish.voice.VoiceSetupActivity"
+                android:label="@string/hebrish_voice_launcher"
+                android:theme="@style/platformActivityTheme"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -772,6 +772,7 @@ public class LatinIME extends InputMethodService implements
     public void setInputView(final View view) {
         super.setInputView(view);
         mInputView = view;
+        app.hebrish.voice.HebrishVoice.INSTANCE.attach(view); // Hebrish: status pill
         mInsetsUpdater = ViewOutlineProviderUtilsKt.setInsetsOutlineProvider(view);
         KtxKt.updateSoftInputWindowLayoutParameters(this, mInputView);
         updateSuggestionStripView(view);
@@ -1053,6 +1054,7 @@ public class LatinIME extends InputMethodService implements
     void onFinishInputViewInternal(final boolean finishingInput) {
         super.onFinishInputView(finishingInput);
         Log.i(TAG, "onFinishInputView");
+        app.hebrish.voice.HebrishVoice.INSTANCE.onFinishInput(); // Hebrish: drop an open take
         cleanupInternalStateForFinishInput();
     }
 
@@ -1429,7 +1431,8 @@ public class LatinIME extends InputMethodService implements
     // completely replace #onCodeInput.
     public void onEvent(@NonNull final Event event) {
         if (KeyCode.VOICE_INPUT == event.getKeyCode()) {
-            mRichImm.switchToShortcutIme(this);
+            // Hebrish: dictate in the keyboard instead of switching to a voice IME
+            app.hebrish.voice.HebrishVoice.INSTANCE.onMicKey(this);
         }
         final InputTransaction completeInputTransaction =
                 mInputLogic.onCodeInput(mSettings.getCurrent(), event,

@@ -1,10 +1,36 @@
 import com.android.build.api.variant.ApplicationVariant
+import java.net.URI
 
 plugins {
     id("com.android.application")
     kotlin("plugin.serialization") version "2.4.0"
     kotlin("plugin.compose") version "2.4.0"
 }
+
+// Hebrish: sherpa-onnx ships its Kotlin API and native libs as one AAR on GitHub releases (not
+// Maven), downloaded at build time like in Hebrish-Dictation. Keep the version in step with
+// hebrish/android/app/build.gradle.kts.
+val sherpaVersion = "1.13.8"
+val sherpaAar = layout.projectDirectory.file("libs/sherpa-onnx-$sherpaVersion.aar")
+val fetchSherpaAar = tasks.register("fetchSherpaAar") {
+    // Locals only: the configuration cache can't serialize references to script-level vals.
+    val f = sherpaAar.asFile
+    val url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$sherpaVersion/sherpa-onnx-$sherpaVersion.aar"
+    outputs.file(f)
+    doLast {
+        if (!f.exists()) {
+            f.parentFile.mkdirs()
+            logger.lifecycle("Downloading $url")
+            URI(url).toURL().openStream().use { input -> f.outputStream().use { input.copyTo(it) } }
+        }
+    }
+}
+val hebrishCatalogueDir = layout.buildDirectory.dir("generated/hebrish-catalogue").get().asFile
+val copyHebrishCatalogue = tasks.register<Copy>("copyHebrishCatalogue") {
+    from(rootProject.file("hebrish/shared/models.json"))
+    into(hebrishCatalogueDir)
+}
+tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(fetchSherpaAar, copyHebrishCatalogue) }
 
 android {
     compileSdk = 37
@@ -17,7 +43,9 @@ android {
         versionName = "4.2"
         ndk {
             abiFilters.clear()
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+            // Hebrish: arm64 only. sherpa-onnx's native libs are ~32 MB per ABI; all four would
+            // add ~120 MB, and every phone the model runs well on is arm64.
+            abiFilters.addAll(listOf("arm64-v8a"))
         }
         proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
@@ -110,12 +138,19 @@ android {
     }
 
     namespace = "helium314.keyboard.latin"
+
+    // Hebrish: the dictation engine (app.hebrish.core) is compiled from the Hebrish-Dictation
+    // submodule's source folder, and its model catalogue is bundled as an asset. See docs/upstream.md.
+    sourceSets["main"].kotlin.srcDir("../hebrish/android/core/src/main/java")
+    sourceSets["main"].assets.srcDir(hebrishCatalogueDir)
     lint {
         abortOnError = true
     }
 }
 
 dependencies {
+    implementation(files(sherpaAar)) // Hebrish
+
     // androidx
     implementation("androidx.core:core-ktx:1.17.0") // 1.18.0 requires minSdk 23
     implementation("androidx.recyclerview:recyclerview:1.4.0")
