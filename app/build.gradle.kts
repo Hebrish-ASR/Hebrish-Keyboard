@@ -186,9 +186,10 @@ dependencies {
 
 // Version: upstream's versionCode/versionName above stay as HeliBoard sets them; the APK gets
 // "<versionName>-hebrish.<revision>" and versionCode * 100 + revision (4201 -> 420101).
-val hebrishRevision = java.util.Properties()
-    .apply { rootProject.file("hebrish.properties").inputStream().use { load(it) } }
-    .getProperty("revision").toInt()
+// (Read by hand: in a build script `java` resolves to the Java extension, so java.util.Properties
+// would need an import at the top of the file, an upstream-owned line.)
+val hebrishRevision = rootProject.file("hebrish.properties").readLines()
+    .first { it.startsWith("revision=") }.substringAfter("=").trim().toInt()
 androidComponents.onVariants { variant ->
     val upstreamCode = android.defaultConfig.versionCode!!
     val name = "${android.defaultConfig.versionName}-hebrish.$hebrishRevision"
