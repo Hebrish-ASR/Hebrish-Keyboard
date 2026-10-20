@@ -1,0 +1,33 @@
+# Every push to main and every PR: check the seams and build the (unsigned) release APK, uploaded
+# as a workflow artifact. Lets the fork be built without a local Android toolchain.
+# From Android-Thin-Fork-Autosync; copy updates verbatim, settings live in fork.env.
+name: Fork CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Settings
+        # fork.env values may be quoted for bash; GITHUB_ENV takes them literally, so strip.
+        run: grep -E '^[A-Z_]+=' fork.env | sed -E "s/=\x27(.*)\x27$/=\1/; s/=\"(.*)\"$/=\1/" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Seams
+        run: scripts/check-seams.sh
+      - name: Build
+        run: ./gradlew "$BUILD_TASK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk-unsigned-${{ github.sha }}
+          path: ${{ env.APK_GLOB }}

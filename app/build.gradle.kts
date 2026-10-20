@@ -181,34 +181,36 @@ dependencies {
     testImplementation("androidx.test:core:1.7.0")
 }
 
-// ---- Hebrish: everything below is ours. Kept at the end of the file, apart from upstream's
-// blocks, so HeliBoard merges never conflict on it (docs/upstream.md). ----
+// ---- Fork: everything below is ours. Appended after upstream's blocks so upstream merges
+// never conflict on it. Settings come from fork.env (see Android-Thin-Fork-Autosync). ----
 
-// Version: upstream's versionCode/versionName above stay as HeliBoard sets them; the APK gets
-// "<versionName>-hebrish.<revision>" and versionCode * 100 + revision (4201 -> 420101).
-// (Read by hand: in a build script `java` resolves to the Java extension, so java.util.Properties
-// would need an import at the top of the file, an upstream-owned line.)
-val hebrishRevision = rootProject.file("hebrish.properties").readLines()
-    .first { it.startsWith("revision=") }.substringAfter("=").trim().toInt()
+// Version: upstream's versionCode/versionName stay as upstream sets them; the APK gets
+// "<versionName>-<SUFFIX>.<REVISION>" and versionCode * 100 + REVISION.
+// (fork.env is parsed by hand: in a build script `java` resolves to the Java extension, so
+// java.util.Properties would need an import at the top of the file, an upstream-owned line.)
+val forkEnv = rootProject.file("fork.env").readLines()
+    .filter { it.isNotBlank() && !it.trimStart().startsWith("#") && it.contains("=") }
+    .associate { it.substringBefore("=").trim() to it.substringAfter("=").trim().trim('\'', '"') }
+val forkRevision = forkEnv.getValue("REVISION").toInt()
 androidComponents.onVariants { variant ->
     val upstreamCode = android.defaultConfig.versionCode!!
-    val name = "${android.defaultConfig.versionName}-hebrish.$hebrishRevision"
+    val name = "${android.defaultConfig.versionName}-${forkEnv.getValue("SUFFIX")}.$forkRevision"
     variant.outputs.forEach { output ->
-        output.versionCode.set(upstreamCode * 100 + hebrishRevision)
+        output.versionCode.set(upstreamCode * 100 + forkRevision)
         output.versionName.set(name)
     }
 }
 
-// Signing: CI writes the keystore from secrets (same key as the Hebrish app). Without
-// RELEASE_KEYSTORE the release APK is unsigned, as in upstream.
+// Signing: CI writes the keystore from secrets. Without RELEASE_KEYSTORE the release APK is
+// unsigned, as in upstream.
 android {
     System.getenv("RELEASE_KEYSTORE")?.let { ks ->
-        signingConfigs.create("hebrishRelease") {
+        signingConfigs.create("forkRelease") {
             storeFile = file(ks)
             storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
             keyAlias = System.getenv("RELEASE_KEY_ALIAS")
             keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
         }
-        buildTypes.getByName("release").signingConfig = signingConfigs.getByName("hebrishRelease")
+        buildTypes.getByName("release").signingConfig = signingConfigs.getByName("forkRelease")
     }
 }

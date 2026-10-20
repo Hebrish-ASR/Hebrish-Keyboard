@@ -1,0 +1,84 @@
+# Weekly: merge upstream's newest stable release (scripts/upstream-sync.sh), build, push main and
+# tag v<X.Y>-<SUFFIX>.1; the tag push starts fork-release.yml. On a conflict, a broken seam or a
+# failed build nothing is pushed and an issue is opened (or commented on) instead.
+#
+# Pushes with secrets.SYNC_TOKEN (repo + workflow scope), not GITHUB_TOKEN: GITHUB_TOKEN may not
+# push commits that change .github/workflows (upstream merges sometimes do), and tags it pushes
+# do not start other workflows.
+# From Android-Thin-Fork-Autosync; copy updates verbatim, settings live in fork.env.
+name: Fork upstream sync
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SYNC_TOKEN }}
+      - name: Settings
+        # fork.env values may be quoted for bash; GITHUB_ENV takes them literally, so strip.
+        run: grep -E '^[A-Z_]+=' fork.env | sed -E "s/=\x27(.*)\x27$/=\1/; s/=\"(.*)\"$/=\1/" >> "$GITHUB_ENV"
+      - name: Merge upstream
+        id: sync
+        run: |
+          git config user.name "fork-sync-bot"
+          git config user.email "fork-sync-bot@users.noreply.github.com"
+          scripts/upstream-sync.sh 2> sync.log | tee -a "$GITHUB_OUTPUT"
+          cat sync.log
+      - name: Report a failed merge
+        if: steps.sync.outputs.status == 'conflict' || steps.sync.outputs.status == 'seams'
+        env:
+          STATUS: ${{ steps.sync.outputs.status }}
+          LATEST: ${{ steps.sync.outputs.latest }}
+          CONFLICTS: ${{ steps.sync.outputs.conflicts }}
+        run: |
+          if [ "$STATUS" = conflict ]; then
+            title="Upstream sync: $LATEST does not merge cleanly"
+            body="Conflicts in: \`$CONFLICTS\`. Merge by hand (keep our side for the changes listed in docs/upstream.md, take upstream's for the rest), set REVISION=1 in fork.env, run scripts/check-seams.sh, push main and tag \`$LATEST-$SUFFIX.1\`. Run: $RUN_URL"
+          else
+            title="Upstream sync: $LATEST merged but a seam is broken"
+            body="$(grep -E '^(MISSING|MOVED|UPSTREAM)' sync.log)
+
+          The merge applied, but the feature would no longer be reached. Fix the hook (docs/upstream.md, seams.txt), then push main and tag \`$LATEST-$SUFFIX.1\`. Run: $RUN_URL"
+          fi
+          n=$(gh issue list --state open --search "in:title \"$title\"" --json number -q '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body"; fi
+          exit 1
+      - uses: actions/setup-java@v4
+        if: steps.sync.outputs.status == 'merged'
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.sync.outputs.status == 'merged'
+      - name: Build before pushing
+        if: steps.sync.outputs.status == 'merged'
+        run: |
+          if ! ./gradlew "$BUILD_TASK" > build.log 2>&1; then
+            tail -60 build.log
+            gh issue create --title "Upstream sync: ${{ steps.sync.outputs.tag }} merged but does not build" --body "Run: $RUN_URL"
+            exit 1
+          fi
+      - name: Push main and tag
+        if: steps.sync.outputs.status == 'merged'
+        run: |
+          git tag "${{ steps.sync.outputs.tag }}"
+          git push origin HEAD:main "${{ steps.sync.outputs.tag }}"

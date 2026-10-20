@@ -1,0 +1,66 @@
+# Signed APK -> GitHub release, on a pushed tag v<upstream>-<SUFFIX>.<n> (your own release: bump
+# REVISION in fork.env, commit, tag, push; fork-upstream-sync.yml pushes v<X.Y>-<SUFFIX>.1 the same
+# way), or manually for an existing tag. Notes from .github/fork-release-notes.md (envsubst:
+# ${VER} ${UPSTREAM} ${SUBMODULES}).
+# From Android-Thin-Fork-Autosync; copy updates verbatim, settings live in fork.env.
+name: Fork release
+on:
+  push:
+    tags: ["v*-*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to (re)build
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          submodules: recursive
+      - name: Settings
+        # fork.env values may be quoted for bash; GITHUB_ENV takes them literally, so strip.
+        run: grep -E '^[A-Z_]+=' fork.env | sed -E "s/=\x27(.*)\x27$/=\1/; s/=\"(.*)\"$/=\1/" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Seams
+        run: scripts/check-seams.sh
+      - name: Tag matches the version the build will carry
+        run: |
+          base=$(sed -nE 's/^ *versionName = "([^"]+)".*/\1/p' "$VERSION_FILE" | head -1)
+          want="v${base}-${SUFFIX}.${REVISION}"
+          [ "$TAG" = "$want" ] || { echo "tag $TAG but sources say $want"; exit 1; }
+          echo "VER=${base}-${SUFFIX}.${REVISION}" >> "$GITHUB_ENV"
+          echo "UPSTREAM=v${base}" >> "$GITHUB_ENV"
+      - name: Keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+      - name: Build
+        env:
+          RELEASE_KEYSTORE: ${{ runner.temp }}/release.jks
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD || secrets.RELEASE_KEYSTORE_PASSWORD }}
+        run: ./gradlew "$BUILD_TASK"
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk="${APK_NAME}-v${VER}.apk"
+          cp $APK_GLOB "$apk"
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$apk" 2>/dev/null | grep 'SHA-256'
+          export VER UPSTREAM
+          export SUBMODULES=$(git submodule status --recursive | awk '{s=$1; sub(/^[-+U]/,"",s); print "`" $2 "@" substr(s,1,7) "`"}' | paste -sd ' ')
+          if [ -f .github/fork-release-notes.md ]; then envsubst '${VER} ${UPSTREAM} ${SUBMODULES}' < .github/fork-release-notes.md > notes.md
+          else echo "${RELEASE_TITLE} ${VER}: upstream ${UPSTREAM} plus this fork's changes." > notes.md; fi
+          gh release create "$TAG" "$apk" --title "${RELEASE_TITLE} ${VER}" --notes-file notes.md

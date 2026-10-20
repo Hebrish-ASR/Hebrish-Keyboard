@@ -1,0 +1,20 @@
+# Seams: every behaviour-carrying change you made to an upstream file, checked after each merge
+# by scripts/check-seams.sh. A merge can apply cleanly and compile while upstream has moved the
+# code you hook, leaving a build that silently lacks your feature; these lines catch that.
+#
+# Tab-separated. Kinds:
+#   has     <file>  <fixed string>                    the string must be in the file
+#   lacks   <file>  <fixed string>                    the string must not be (e.g. the upstream call you replaced)
+#   near    <file>  <anchor>  <N>  <fixed string>     the string must appear within N lines after the anchor
+#   exists  <path>                                    the file must exist (e.g. a submodule's sources)
+#
+has	app/src/main/java/helium314/keyboard/latin/LatinIME.java	HebrishVoice.INSTANCE.onMicKey(this)
+has	app/src/main/java/helium314/keyboard/latin/LatinIME.java	HebrishVoice.INSTANCE.attach(view)
+has	app/src/main/java/helium314/keyboard/latin/LatinIME.java	HebrishVoice.INSTANCE.onFinishInput()
+has	app/src/main/java/helium314/keyboard/latin/RichInputMethodManager.kt	val isShortcutImeReady get() = true
+has	app/src/main/AndroidManifest.xml	android.permission.RECORD_AUDIO
+has	app/src/main/AndroidManifest.xml	android.permission.INTERNET
+has	app/src/main/AndroidManifest.xml	app.hebrish.voice.VoiceSetupActivity
+near	app/src/main/java/helium314/keyboard/latin/LatinIME.java	KeyCode.VOICE_INPUT == event.getKeyCode()	3	HebrishVoice
+lacks	app/src/main/java/helium314/keyboard/latin/LatinIME.java	switchToShortcutIme(this)
+exists	hebrish/android/core/src/main/java/app/hebrish/core/Transcriber.kt
