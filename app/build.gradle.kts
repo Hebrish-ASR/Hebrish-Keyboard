@@ -8,7 +8,7 @@ plugins {
 }
 
 // Hebrish: sherpa-onnx ships its Kotlin API and native libs as one AAR on GitHub releases (not
-// Maven), downloaded at build time like in Hebrish-Dictation. Keep the version in step with
+// Maven), downloaded at build time like in Hebrish-App. Keep the version in step with
 // hebrish/android/app/build.gradle.kts.
 val sherpaVersion = "1.13.8"
 val sherpaAar = layout.projectDirectory.file("libs/sherpa-onnx-$sherpaVersion.aar")
@@ -139,7 +139,7 @@ android {
 
     namespace = "helium314.keyboard.latin"
 
-    // Hebrish: the dictation engine (app.hebrish.core) is compiled from the Hebrish-Dictation
+    // Hebrish: the dictation engine (app.hebrish.core) is compiled from the Hebrish-App
     // submodule's source folder, and its model catalogue is bundled as an asset. See docs/upstream.md.
     sourceSets["main"].kotlin.srcDir("../hebrish/android/core/src/main/java")
     sourceSets["main"].assets.srcDir(hebrishCatalogueDir)

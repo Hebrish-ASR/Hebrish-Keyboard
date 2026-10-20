@@ -51,7 +51,7 @@ would touch every source file and make every upstream merge conflict.
 
 ## The Hebrish engine (submodule)
 
-`hebrish/` is a git submodule of `Hebrish-ASR/Hebrish-Dictation` (the voice-keyboard and
+`hebrish/` is a git submodule of `Hebrish-ASR/Hebrish-App` (the voice-keyboard and
 desktop apps). The keyboard compiles its `android/core/src/main/java` (package
 `app.hebrish.core`: catalogue, model download/store, recorder, transcriber) as part of the app;
 see that folder's README for why it's a source folder rather than a Gradle module (AGP 8.9 vs

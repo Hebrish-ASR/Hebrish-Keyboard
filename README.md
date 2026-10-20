@@ -12,7 +12,7 @@ keyboard's mic key, so dictation needs no switch to a separate voice keyboard.
 - **Differences from HeliBoard:** adds the microphone and internet permissions (internet is for
   the one-time model download; HeliBoard itself has none), and builds for arm64 phones only.
 - **Prefer your own keyboard?** The voice-only input method that pairs with any keyboard lives in
-  [Hebrish-Dictation](https://github.com/Hebrish-ASR/Hebrish-Dictation).
+  [Hebrish-App](https://github.com/Hebrish-ASR/Hebrish-App).
 - **Credit:** all keyboard functionality is HeliBoard's, by Helium314 and the HeliBoard
   contributors, itself based on OpenBoard and AOSP LatinIME. Licensed GPL-3.0, like HeliBoard.
 - **Please report bugs here, not to HeliBoard.** Issues that also occur in stock HeliBoard
