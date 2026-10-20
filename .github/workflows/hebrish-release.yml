@@ -1,0 +1,66 @@
+# Signed Hebrish Keyboard APK -> GitHub release. Runs on a pushed tag v<HeliBoard>-hebrish.<n>
+# (a Hebrish-only release: bump hebrish.properties, commit, tag, push; hebrish-upstream-sync.yml
+# pushes v<X.Y>-hebrish.1 the same way). docs/upstream.md.
+name: Hebrish release
+on:
+  push:
+    tags: ["v*-hebrish.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to (re)build, e.g. v4.2-hebrish.1
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Hooks present
+        run: scripts/check-seams.sh
+      - name: Tag matches the version the build will carry
+        run: |
+          base=$(sed -nE 's/^ *versionName = "([^"]+)".*/\1/p' app/build.gradle.kts | head -1)
+          rev=$(sed -nE 's/^revision=([0-9]+)$/\1/p' hebrish.properties)
+          want="v${base}-hebrish.${rev}"
+          [ "$TAG" = "$want" ] || { echo "tag $TAG but sources say $want"; exit 1; }
+          echo "VER=${base}-hebrish.${rev}" >> "$GITHUB_ENV"
+          echo "UPSTREAM=v${base}" >> "$GITHUB_ENV"
+      - name: Keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+      - name: Build
+        env:
+          RELEASE_KEYSTORE: ${{ runner.temp }}/release.jks
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+        run: ./gradlew assembleRelease
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk="HebrishKeyboard-v${VER}.apk"
+          cp app/build/outputs/apk/release/*-release.apk "$apk"
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$apk" | grep -i 'SHA-256' | head -1
+          engine=$(git -C hebrish rev-parse --short HEAD)
+          cat > notes.md <<NOTES
+          Hebrish Keyboard ${VER}: HeliBoard [${UPSTREAM}](https://github.com/HeliBorg/HeliBoard/releases/tag/${UPSTREAM}) with Hebrish dictation on the mic key (engine \`Hebrish-ASR/Hebrish-App@${engine}\`).
+
+          **Early.** Built and released automatically; please [report problems here](https://github.com/Hebrish-ASR/Hebrish-Keyboard/issues), not to HeliBoard. arm64 phones only. First use of the mic key downloads the model (~660 MB, once).
+
+          Installs alongside HeliBoard (application ID \`app.hebrish.keyboard\`). Signed with the same key as the Hebrish app.
+          NOTES
+          gh release create "$TAG" "$apk" --title "Hebrish Keyboard ${VER}" --notes-file notes.md

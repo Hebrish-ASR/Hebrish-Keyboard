@@ -180,3 +180,34 @@ dependencies {
     testImplementation("androidx.test:runner:1.7.0")
     testImplementation("androidx.test:core:1.7.0")
 }
+
+// ---- Hebrish: everything below is ours. Kept at the end of the file, apart from upstream's
+// blocks, so HeliBoard merges never conflict on it (docs/upstream.md). ----
+
+// Version: upstream's versionCode/versionName above stay as HeliBoard sets them; the APK gets
+// "<versionName>-hebrish.<revision>" and versionCode * 100 + revision (4201 -> 420101).
+val hebrishRevision = java.util.Properties()
+    .apply { rootProject.file("hebrish.properties").inputStream().use { load(it) } }
+    .getProperty("revision").toInt()
+androidComponents.onVariants { variant ->
+    val upstreamCode = android.defaultConfig.versionCode!!
+    val name = "${android.defaultConfig.versionName}-hebrish.$hebrishRevision"
+    variant.outputs.forEach { output ->
+        output.versionCode.set(upstreamCode * 100 + hebrishRevision)
+        output.versionName.set(name)
+    }
+}
+
+// Signing: CI writes the keystore from secrets (same key as the Hebrish app). Without
+// RELEASE_KEYSTORE the release APK is unsigned, as in upstream.
+android {
+    System.getenv("RELEASE_KEYSTORE")?.let { ks ->
+        signingConfigs.create("hebrishRelease") {
+            storeFile = file(ks)
+            storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+            keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+        }
+        buildTypes.getByName("release").signingConfig = signingConfigs.getByName("hebrishRelease")
+    }
+}

@@ -1,0 +1,103 @@
+# Weekly: if HeliBoard has a stable release newer than what main is built on, merge it, reset
+# the Hebrish revision to 1, check the hooks, build, push main + tag v<X.Y>-hebrish.1; the tag
+# push starts hebrish-release.yml. On a merge conflict, a failed hook check or a failed build
+# nothing is pushed and an issue is opened instead. docs/upstream.md.
+#
+# Pushes with secrets.SYNC_TOKEN (a token with `workflow` scope), not GITHUB_TOKEN: GITHUB_TOKEN
+# may not push commits that change .github/workflows (upstream merges sometimes do), and tags it
+# pushes do not trigger other workflows.
+name: Hebrish upstream sync
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.merge.outputs.tag }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
+          submodules: recursive
+      - name: Newest stable HeliBoard release
+        id: latest
+        run: |
+          git remote add upstream https://github.com/HeliBorg/HeliBoard.git
+          git fetch -q upstream --tags
+          latest=$(git ls-remote --tags --refs upstream 'v*' | sed 's#.*refs/tags/##' \
+            | grep -E '^v[0-9]+(\.[0-9]+)*$' | sort -V | tail -1)
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          if git merge-base --is-ancestor "$latest" HEAD; then
+            echo "main already contains $latest"; echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new release $latest"; echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Merge
+        id: merge
+        if: steps.latest.outputs.new == 'true'
+        env:
+          LATEST: ${{ steps.latest.outputs.latest }}
+        run: |
+          git config user.name "hebrish-bot"
+          git config user.email "info@hebrish.app"
+          report() { # title, body
+            n=$(gh issue list --state open --search "in:title \"$1\"" --json number -q '.[0].number')
+            if [ -n "$n" ]; then gh issue comment "$n" --body "$2"; else gh issue create --title "$1" --body "$2"; fi
+          }
+          if ! git merge --no-edit -m "Merge HeliBoard $LATEST" "$LATEST"; then
+            files=$(git diff --name-only --diff-filter=U)
+            git merge --abort
+            report "Upstream sync: $LATEST does not merge cleanly" "Conflicts in:
+          \`\`\`
+          $files
+          \`\`\`
+          Merge by hand following docs/upstream.md (keep our side for the listed Hebrish changes, take theirs for the rest), reset \`hebrish.properties\` to \`revision=1\`, push main and tag \`$LATEST-hebrish.1\`. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            exit 1
+          fi
+          sed -i 's/^revision=.*/revision=1/' hebrish.properties
+          git commit -qam "Hebrish revision 1 on HeliBoard $LATEST" || true
+          if ! out=$(scripts/check-seams.sh); then
+            report "Upstream sync: $LATEST merged but a Hebrish hook is missing" "\`\`\`
+          $out
+          \`\`\`
+          The merge compiled cleanly or not at all, but the mic key would no longer reach Hebrish. Fix the hook (docs/upstream.md), then push main and tag \`$LATEST-hebrish.1\`. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            exit 1
+          fi
+          echo "tag=$LATEST-hebrish.1" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@v4
+        if: steps.merge.outputs.tag
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.merge.outputs.tag
+      - name: Build before pushing
+        if: steps.merge.outputs.tag
+        run: |
+          if ! ./gradlew assembleRelease > build.log 2>&1; then
+            tail -60 build.log
+            gh issue create --title "Upstream sync: ${{ steps.merge.outputs.tag }} merged but does not build" \
+              --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            exit 1
+          fi
+      - name: Push main and tag
+        if: steps.merge.outputs.tag
+        run: |
+          git tag "${{ steps.merge.outputs.tag }}"
+          git push origin HEAD:main "${{ steps.merge.outputs.tag }}"
+

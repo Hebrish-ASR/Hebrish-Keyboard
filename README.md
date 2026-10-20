@@ -5,7 +5,10 @@ writes Hebrew words (romanized) correctly. It is a fork of
 **[HeliBoard](https://github.com/HeliBorg/HeliBoard)** with Hebrish voice input built into the
 keyboard's mic key, so dictation needs no switch to a separate voice keyboard.
 
-- **Status:** early, not yet tested on a phone. HeliBoard 4.2, renamed (application ID
+- **Status:** early, released before being tested on a phone; problems go in
+  [issues](https://github.com/Hebrish-ASR/Hebrish-Keyboard/issues). APKs:
+  [releases](https://github.com/Hebrish-ASR/Hebrish-Keyboard/releases). Each new stable
+  HeliBoard release is merged and re-released automatically (`docs/upstream.md`). HeliBoard 4.2, renamed (application ID
   `app.hebrish.keyboard`) so it installs alongside stock HeliBoard, with dictation on the mic
   key: tap to talk, tap again to insert. First use opens **Hebrish voice** setup to download the
   model (about 660 MB, once) and allow the microphone.
