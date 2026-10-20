@@ -81,7 +81,7 @@ Keep this list complete; it is what makes upstream merges cheap.
 | `app/build.gradle.kts` | `abiFilters` arm64-v8a only; sherpa-onnx AAR fetch task + dependency; model catalogue copied from `hebrish/shared/models.json` into assets; `kotlin.srcDir("../hebrish/android/core/src/main/java")` | The engine. arm64 only because sherpa-onnx adds ~32 MB per ABI |
 | `app/proguard-rules.pro` | Keep `com.k2fsa.sherpa.onnx.**` | Its JNI layer uses the Kotlin classes by name; R8 would strip them in release builds |
 | `.gitignore` | `app/libs/*.aar` | The downloaded sherpa-onnx AAR |
-| New files (no upstream counterpart) | `app/src/main/java/app/hebrish/voice/` (`HebrishVoice.kt`, `VoiceSetupActivity.kt`), `app/src/main/res/values/hebrish_voice.xml`, `.gitmodules` + `hebrish/` submodule, `hebrish.properties`, `scripts/check-seams.sh`, `.github/workflows/hebrish-*.yml` | Never conflict on merge. Upstream's own workflows are left as they are |
+| New files (no upstream counterpart) | `app/src/main/java/app/hebrish/voice/` (`HebrishVoice.kt`, `VoiceSetupActivity.kt`), `app/src/main/res/values/hebrish_voice.xml`, `.gitmodules` + `hebrish/` submodule, `hebrish.properties`, `scripts/check-seams.sh` (force-added: upstream's `.gitignore` ignores `*.sh`), `.github/workflows/hebrish-*.yml` | Never conflict on merge. Upstream's own workflows are left as they are |
 
 The Kotlin package (`helium314.keyboard.*`, `namespace`) is deliberately unchanged: renaming it
 would touch every source file and make every upstream merge conflict.
